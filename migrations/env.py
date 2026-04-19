@@ -1,10 +1,21 @@
 import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from app.models.user import User
 from pathlib import Path
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
+
+from app.models.user import User
+from app.models.cliente import Cliente  # Asegúrate de importar tu modelo de Cliente
+from app.models.evento import Evento    # Y el de Evento cuando lo crees
+
+
 
 # Añadir la raíz del proyecto al sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent  # .../camcoach-backend
