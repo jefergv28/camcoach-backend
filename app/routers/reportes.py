@@ -1,3 +1,5 @@
+# pylint: disable=not-callable
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -12,10 +14,8 @@ from app.models.ingresos import Ingreso
 
 from app.models.tareas import Tarea, EstadoTarea
 
-router = APIRouter(
-    prefix="/reportes",
-    tags=["Reportes"]
-)
+router = APIRouter(prefix="/reportes", tags=["Reportes"])
+
 
 @router.get("/", response_model=ReporteGeneral)
 def obtener_reporte_general(db: Session = Depends(get_db)):
@@ -30,12 +30,21 @@ def obtener_reporte_general(db: Session = Depends(get_db)):
     # 2. Iterar por cada cliente para calcular sus estadísticas
     for cliente in clientes_db:
         # Sumar ingresos pagados del cliente
-        ingresos_cliente = db.query(func.sum(Ingreso.monto))\
-            .filter(Ingreso.cliente_id == cliente.id, Ingreso.estado == "pagado").scalar() or 0.0
+        ingresos_cliente = (
+            db.query(func.sum(Ingreso.monto))
+            .filter(Ingreso.cliente_id == cliente.id, Ingreso.estado == "pagado")
+            .scalar()
+            or 0.0
+        )
 
         # Contar eventos del cliente
-        eventos_cliente = db.query(func.count(Evento.id))\
-            .filter(Evento.cliente_id == cliente.id).scalar() or 0
+        eventos_cliente = (
+            # pylint: disable=not-callable
+            db.query(func.count(Evento.id))
+            .filter(Evento.cliente == cliente.nombre)
+            .scalar()
+            or 0
+        )
 
         ingresos_totales += ingresos_cliente
         eventos_totales += eventos_cliente
@@ -44,17 +53,23 @@ def obtener_reporte_general(db: Session = Depends(get_db)):
         # luego lo ajustas según tu regla de negocio)
         retencion_simulada = 85 if ingresos_cliente > 0 else 50
 
-        resumen_clientes.append(ResumenCliente(
-            id=cliente.id,
-            nombre=cliente.nombre,
-            ingresos=ingresos_cliente,
-            eventos=eventos_cliente,
-            retencion=retencion_simulada
-        ))
+        resumen_clientes.append(
+            ResumenCliente(
+                id=cliente.id,
+                nombre=cliente.nombre,
+                ingresos=ingresos_cliente,
+                eventos=eventos_cliente,
+                retencion=retencion_simulada,
+            )
+        )
 
     # 3. Contar todas las tareas completadas globales
-    tareas_completadas = db.query(func.count(Tarea.id))\
-        .filter(Tarea.estado == EstadoTarea.completado).scalar() or 0
+    tareas_completadas = (
+        db.query(func.count(Tarea.id))
+        .filter(Tarea.estado == EstadoTarea.completado)
+        .scalar()
+        or 0
+    )
 
     # 4. Calcular retención promedio global
     retencion_promedio = 0
@@ -68,5 +83,5 @@ def obtener_reporte_general(db: Session = Depends(get_db)):
         eventos_totales=eventos_totales,
         tareas_completadas=tareas_completadas,
         retencion_promedio=retencion_promedio,
-        clientes=resumen_clientes
+        clientes=resumen_clientes,
     )
