@@ -5,7 +5,9 @@ from app.database import engine, Base
 
 from app.routers import (
     auth,
+    buscador,
     clientes,
+    configuracion,
     eventos,
     ingresos,
     tareas,
@@ -49,6 +51,8 @@ app.include_router(tareas.router)
 app.include_router(capacitaciones.router)
 app.include_router(reportes.router)
 app.include_router(usuarios.router)
+app.include_router(configuracion.router)
+app.include_router(buscador.router)
 
 # =========================
 # STARTUP (CLAVE)
