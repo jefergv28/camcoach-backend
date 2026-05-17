@@ -23,5 +23,9 @@ class Tarea(Base):
     prioridad = Column(SQLEnum(PrioridadTarea), default=PrioridadTarea.media)
     fecha_limite = Column(Date, nullable=True)
 
-    # Llave foránea conectando al cliente
+    # 🔗 Llave foránea conectando al cliente
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=False)
+
+    # 🎯 EL CANDADO DEFINITIVO: Conexión física con el administrador dueño de la tarea
+    # (Asegúrate de que el __tablename__ de tu modelo de usuarios sea exactamente "usuarios")
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)

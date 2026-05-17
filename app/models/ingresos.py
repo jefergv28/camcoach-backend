@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, Float, String, Date, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 import datetime
 from app.database import Base
+
 class Ingreso(Base):
     __tablename__ = "ingresos"
 
@@ -12,8 +13,12 @@ class Ingreso(Base):
     metodo_pago = Column(String, default="efectivo") # efectivo, transferencia, tarjeta
     estado = Column(String, default="pagado") # pagado, pendiente
 
-    # Llave foránea conectando al cliente
+    # 🔗 Llave foránea conectando al cliente
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
 
-    # Relación (Opcional, si tienes el modelo Cliente definido)
+    # 🎯 EL CANDADO DEFINITIVO: Conexión física con el administrador dueño del dinero
+    # (Asegúrate de que el __tablename__ de tu modelo de usuarios sea exactamente "usuarios")
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+
+    # Relaciones (Opcionales por si las necesitas explotar con ORM más adelante)
     # cliente = relationship("Cliente", back_populates="ingresos")
