@@ -22,7 +22,7 @@ from app.routers import (
 app = FastAPI(
     title="CamCoach Backend",
     description="API para gestión de creadores de contenido",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # =========================
@@ -37,6 +37,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origins=["*"],
     expose_headers=["set-cookie"],
 )
 
@@ -54,6 +55,7 @@ app.include_router(usuarios.router)
 app.include_router(configuracion.router)
 app.include_router(buscador.router)
 
+
 # =========================
 # STARTUP (CLAVE)
 # =========================
@@ -65,11 +67,10 @@ def on_startup():
     """
     Base.metadata.create_all(bind=engine)
 
+
 # =========================
 # ROOT
 # =========================
 @app.get("/")
 def root():
-    return {
-        "message": "CamCoach Backend - Listo y funcionando 🚀"
-    }
+    return {"message": "CamCoach Backend - Listo y funcionando 🚀"}
