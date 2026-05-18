@@ -25,15 +25,22 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# =========================
-# CORS (Configuración definitiva para producción)
-# =========================
+# ==========================================
+# CONFIGURACIÓN DE CORS PREMIUM PARA PRODUCCIÓN
+# ==========================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 🎯 Permite cualquier origen (Vercel, Localhost, etc.)
-    allow_credentials=False,  # ⚠️ OBLIGATORIO en False si usas "*" para evitar conflictos de seguridad web
-    allow_methods=["*"],  # Permite GET, POST, PUT, DELETE, OPTIONS, etc.
-    allow_headers=["*"],  # Permite cabeceras como Authorization y Content-Type
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        # 🎯 Agregamos la URL exacta de producción que te dio el error:
+        "https://camcoach-560o5ddf3-jefersons-projects-17f98225.vercel.app",
+        # 💡 Consejo: Agrega también aquí tu subdominio principal de Vercel (el que no tiene números raros)
+        # Por ejemplo: "https://camcoach-frontend.vercel.app" o como se llame tu dominio limpio.
+    ],
+    allow_credentials=True,  # ✨ Ahora sí puede estar en True sin que el navegador se queje
+    allow_methods=["*"],
+    allow_headers=["*"],
     expose_headers=["set-cookie"],
 )
 
