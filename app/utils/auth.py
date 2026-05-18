@@ -2,7 +2,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from jose import JWTError, jwt
-from fastapi import Cookie, HTTPException, status, Depends
+from fastapi import Cookie, HTTPException, status, Depends, Request
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,8 @@ from app.config import settings
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
+# 🎯 Esquema estándar para leer el Header 'Authorization: Bearer <token>'
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 # =========================
 # CREAR TOKEN
@@ -30,28 +33,36 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 # =========================
-# USUARIO OBLIGATORIO
+# USUARIO OBLIGATORIO (BLINDADO)
 # =========================
 async def get_current_user(
-    token: str = Cookie(None, alias="camcoach_token"),
+    request: Request,
+    header_token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
+    # 🎯 INTELIGENCIA DE EXTRACCIÓN:
+    # 1. Intentamos leer desde el Header (Bearer)
+    token = header_token
+
+    # 2. Si no hay header, intentamos leer desde las cookies ("token" o "camcoach_token")
+    if not token:
+        token = request.cookies.get("token") or request.cookies.get("camcoach_token")
+
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No se encontró token en la cookie",
+            detail="No se encontró un token de sesión válido en los encabezados ni en las cookies.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Credenciales inválidas",
+        detail="Credenciales inválidas o token expirado",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-
         email: str = payload.get("sub")
 
         if email is None:
@@ -69,25 +80,29 @@ async def get_current_user(
 
 
 # =========================
-# USUARIO OPCIONAL (CORREGIDO)
+# USUARIO OPCIONAL (BLINDADO)
 # =========================
 async def get_current_user_optional(
-    token: str = Cookie(None, alias="camcoach_token"),
+    request: Request,
+    header_token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
+    token = header_token
+
+    if not token:
+        token = request.cookies.get("token") or request.cookies.get("camcoach_token")
+
     if not token:
         return None
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-
         email: str = payload.get("sub")
 
         if email is None:
             return None
 
         user = db.query(Usuario).filter(Usuario.email == email).first()
-
         return user
 
     except (JWTError, ValidationError):

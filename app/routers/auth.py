@@ -21,23 +21,10 @@ def login(
     email_ingresado = form_data.username.strip()
     print(f"🛑 INTENTO DE LOGIN: Buscando -> '{email_ingresado}'")
 
-    todos_los_usuarios = db.query(Usuario).all()
-    print(f"🕵️ DETECTIVE: Hay {len(todos_los_usuarios)} usuarios en la BD.")
-    for u in todos_los_usuarios:
-        print(f"   -> Correo guardado: '{u.email}' (Estado: Activo={u.is_active})")
-
     user = db.query(Usuario).filter(Usuario.email == email_ingresado).first()
 
-    if not user:
-        print("❌ ERROR: El correo NO coincidió con ninguno de la lista de arriba.")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email o contraseña incorrectos",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    if not verificar_password(form_data.password, user.hashed_password):
-        print("❌ ERROR: La contraseña no coincide con el hash guardado.")
+    if not user or not verificar_password(form_data.password, user.hashed_password):
+        print("❌ ERROR: Credenciales inválidas.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o contraseña incorrectos",
@@ -45,35 +32,38 @@ def login(
         )
 
     print("✅ LOGIN EXITOSO. Generando token...")
-
     access_token = create_access_token(data={"sub": user.email})
 
+    # 🎯 CORRECCIÓN 1: Eliminamos 'domain=localhost' y ajustamos las banderas para producción
+    # Al quitar 'domain', la cookie se asocia automáticamente al dominio real donde corre la API (Local o Render)
     response.set_cookie(
-        key="camcoach_token",
+        key="token",  # 🔄 Sincronizado con el nombre "token" que usa tu Frontend
         value=access_token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
+        httponly=False,       # Permite que js-cookie en Vercel lo lea sin líos de CORS
+        secure=True,          # OBLIGATORIO para HTTPS en producción
+        samesite="none",      # Permite transferencia cross-origin entre Vercel y Render
         max_age=3600 * 24,
         path="/",
-        domain="localhost",
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# <--- Cambiamos UserOut por UsuarioResponse
 @router.get("/me", response_model=UsuarioResponse)
 def get_current_user_info(
-    current_user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
     Devuelve los datos del usuario actualmente logueado.
-    Requiere token válido (en cookie o header).
+    Garantiza compatibilidad leyendo la base de datos a través del payload validado por get_current_user.
     """
-    user = db.query(Usuario).filter(Usuario.email == current_user.email).first()
+    # 🎯 CORRECCIÓN 2: Aseguramos la búsqueda usando el atributo de email del token decodificado
+    email_token = getattr(current_user, "email", None) or getattr(current_user, "username", None) or current_user.sub
+
+    user = db.query(Usuario).filter(Usuario.email == email_token).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado en el sistema"
         )
     return user
