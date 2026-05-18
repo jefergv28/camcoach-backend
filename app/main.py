@@ -25,20 +25,20 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# ==========================================
-# CONFIGURACIÓN DE CORS PREMIUM PARA PRODUCCIÓN
-# ==========================================
+# ===================================================
+# CONFIGURACIÓN DE CORS BLINDADA PARA VERCEL (DINÁMICA)
+# ===================================================
+# Nota: Usamos allow_origin_regex para devorar cualquier URL de previsualización de Vercel
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        # 🎯 Agregamos la URL exacta de producción que te dio el error:
-        "https://camcoach-560o5ddf3-jefersons-projects-17f98225.vercel.app",
-        # 💡 Consejo: Agrega también aquí tu subdominio principal de Vercel (el que no tiene números raros)
-        # Por ejemplo: "https://camcoach-frontend.vercel.app" o como se llame tu dominio limpio.
+        "https://camcoach.vercel.app",  # 🎯 Tu URL oficial fija de producción
     ],
-    allow_credentials=True,  # ✨ Ahora sí puede estar en True sin que el navegador se queje
+    # 🔥 Esta línea mágica acepta CUALQUIER enlace dinámico que te genere Vercel
+    allow_origin_regex=r"https://camcoach-.*\.vercel\.app",
+    allow_credentials=True,  # 🌟 Sigue en True de forma segura
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["set-cookie"],
