@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from openai import chat
 
 from app.database import engine, Base
 
@@ -57,6 +58,7 @@ app.include_router(reportes.router)
 app.include_router(usuarios.router)
 app.include_router(configuracion.router)
 app.include_router(buscador.router)
+app.include_router(chat.router)
 
 
 # =========================
